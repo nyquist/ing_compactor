@@ -1,4 +1,4 @@
-"""Converste un extras de cont in format CSV de la ING Bank
+"""Converteste un extras de cont in format CSV de la ING Bank
 in unul mai compact si mai usor de folosit"""
 
 import os
@@ -10,7 +10,7 @@ import csv
 locale.setlocale(locale.LC_ALL, 'ro')
 
 
-def parse_chunk(lines):
+def parse_chunk(lines, iban):
     """parseaza mai multe linii intr-o singura linie compacta"""
     data_tip_pattern = re.compile(r'^([0-9]{2}) (ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie) ([0-9]{4}),,([^,]+),+"([0-9.,]+)",')
     #suma_pattern = re.compile (r',"([0-9,]+)"')
@@ -47,10 +47,10 @@ def parse_chunk(lines):
             detalii.append(line.replace(",,", "").replace("\"", "").replace("\n", "|"))
     if dc == "credit":
         suma = -suma
-    return (data.strftime(DATE_FORMAT), tip, suma, dc, cine, "".join(detalii))
+    return (iban, data.strftime(DATE_FORMAT), tip, suma, dc, cine, "".join(detalii))
 
 
-def parse_file(file_name):
+def parse_file(file_name, iban):
     """parseaza un fisier pentru a gasi chunk-uri"""
     next_line_pattern = re.compile(r'^,,')
     #first_line_pattern = re.compile(r'^,Data,,Detalii tranzactie,,,Debit,,Credit')
@@ -66,14 +66,14 @@ def parse_file(file_name):
             chunk.append(line)
         elif re.search(new_chunk_pattern, line):
             if len(chunk) > 0:
-                newlines.append(parse_chunk(chunk))
+                newlines.append(parse_chunk(chunk, iban))
                 #print (parse_chunk(chunk))
             chunk = []
             chunk.append(line)
 
         elif re.search(sold_initial_pattern, line):
             if len(chunk) > 0:
-                newlines.append(parse_chunk(chunk))
+                newlines.append(parse_chunk(chunk, iban))
                 return newlines
                 #print (parse_chunk(chunk))
                 #TODO ce fac cu sold initial?
@@ -90,6 +90,7 @@ DATE_FORMAT = "%d-%m-%Y"
 JOIN_CHAR = ""
 SORTABLE_FILES = False
 SUFIX = "_compact"
+ALL_IN_ONE = True
 # PATTERNS
 
 FILE_PATTERN = re.compile(r'Extras de cont ([a-z]+)_([0-9]{4})_(RO\d{2}INGB[a-zA-Z0-9]{1,16})_([A-Z]+).CSV')
@@ -112,6 +113,11 @@ file_list = []
 for file in os.listdir("./"):
     if re.search(FILE_PATTERN, file):
         file_list.append(file)
+if ALL_IN_ONE:
+    all_in_one_file = "ING Bank - Extras de cont - All in one.csv"
+    out_all = open(all_in_one_file, 'w', newline='')
+    csv_out_all = csv.writer(out_all, delimiter=';')
+    csv_out_all.writerow(['iban','data', 'tip', 'suma', 'debit/credit', 'cine', 'detalii'])
 for file in file_list:
     match = re.search(FILE_PATTERN, file)
     (luna, an, iban, moneda) = match.groups()
@@ -124,5 +130,9 @@ for file in file_list:
     new_file += "_" + iban + "_" + moneda + SUFIX +".csv"
     with open(new_file, 'w', newline='') as out:
         csv_out = csv.writer(out, delimiter=';')
-        csv_out.writerow(['data', 'tip', 'suma', 'debit/credit', 'cine', 'detalii'])
-        csv_out.writerows(parse_file(file))
+        csv_out.writerow(['iban','data', 'tip', 'suma', 'debit/credit', 'cine', 'detalii'])
+        lines = parse_file(file, iban)
+        csv_out.writerows(lines)
+        if ALL_IN_ONE:
+            csv_out_all.writerows(lines)
+
