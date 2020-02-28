@@ -3,6 +3,7 @@ import json
 import collections
 from os import listdir
 from bullet import Bullet, Input 
+import os
 
 
 
@@ -202,16 +203,17 @@ class ING_FileCompactor:
                     transaction.set_category(participants[transaction.party])
                 else:
                     print(transaction)
-                    print(transaction.get_meta())
+                    #print(transaction.get_meta())
                     choices = list(operator.get_categories())
                     choices.append('NEW')
-                    #category = input("Set category [{}]:".format(operator.get_categories()))
-                    #cli = Bullet(prompt = "Choose from the items below: ", choices = list(operator.get_categories()).append('NEW'))  # Create a Bullet or Check object
-                    cli = Bullet(prompt = "Choose from the items below: ", choices = sorted(choices))   # Create a Bullet or Check object
-                    category = cli.launch()  # Launch a prompt
-                    if category == 'NEW':
-                        new_cli = Input(prompt = "Add new category: " )  # Create a Bullet or Check object
-                        category = new_cli.launch()  # Launch a prompt
+                    if os.name == 'nt':
+                        category = input("Set category [{}]:".format(operator.get_categories()))
+                    else:
+                        cli = Bullet(prompt = "Choose from the items below: ", choices = sorted(choices))   # Create a Bullet or Check object
+                        category = cli.launch()  # Launch a prompt
+                        if category == 'NEW':
+                            new_cli = Input(prompt = "Add new category: " )  # Create a Bullet or Check object
+                            category = new_cli.launch()  # Launch a prompt
                     transaction.set_category(category)
                     operator.add_participant(transaction.party, category)
             operator.save()
@@ -236,6 +238,8 @@ if __name__ == '__main__':
                 totals[key] = totals[key] + analysis[key]
             else:
                 totals[key] = analysis[key]
+    rows = []
+    rows.append(['category', 'ammount', 'percentage', 'total', 'average'])
     print("{:15} {:15}, {:6} of {:10} {} ".format('category', 'ammount', 'percentage', 'total', 'average' ))
     print("------------------------"*3)
     add_line = False
@@ -249,10 +253,15 @@ if __name__ == '__main__':
                 print("------------------------"*3)
                 add_line = True
         if key not in ['_total_']:
+            rows.append([key, "{:.2f}".format(value), "{:.2f}%".format(percentage), "{:.2f}".format(total), "{:.2f}".format(value/files_count)])
             print("{:15} {:15,.2f}, {:6.2f}% of {:10,.2f}. {:,.2f} ".format(key.ljust(10), value, percentage, total, value/files_count ))
     print("------------------------"*3)
+    rows.append(['_total_', "{:.2f}".format(totals['_total_']), '-', '-', "{:.2f}".format(value/files_count)])
     print("{:15} {:15,.2f}, {:6} of {:10} {:,.2f} ".format('_total_'.ljust(10), totals['_total_'], '-', '-', totals['_total_']/files_count ))
-        
+    with open('summary.csv', 'w') as csvfile:
+        writer = csv.writer(csvfile)
+        for item in rows:
+            writer.writerow(item)
     
 
             
