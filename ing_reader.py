@@ -236,8 +236,9 @@ if __name__ == '__main__':
     filenames = listdir('.')
     totals = dict()
     files_count = 0
+    print ('Parsing files')
     for f in [ filename for filename in filenames if filename.endswith( suffix ) and filename.startswith(prefix) ]:
-        print(f)
+        print("{}".format(f))
         files_count = files_count + 1
         analysis = ING_FileCompactor(f).get_analysis()
         for key in analysis:
@@ -247,6 +248,7 @@ if __name__ == '__main__':
                 totals[key] = analysis[key]
     rows = []
     rows.append(['category', 'ammount', 'percentage', 'total', 'average'])
+    print()
     print("{:15} {:15} {:6} of {:10} {} ".format('category', 'ammount', 'percentage', 'total', 'average' ))
     print("------------------------"*3)
     add_line = False
