@@ -190,7 +190,7 @@ class Analytics:
                 total = total_in
             percentage = 100*value/total
             if key != '_total_':
-                print("{} {:10.2f} {:5.2f}% of {:10.2f} ".format(key.ljust(10), value, percentage, total))
+                print("{} {:10.2f} {:5.2f}% of {:10.2f} ".format(key, value, percentage, total))
 
 class ING_FileCompactor:
     def __init__(self, fileName):
@@ -207,7 +207,14 @@ class ING_FileCompactor:
                     choices = list(operator.get_categories())
                     choices.append('NEW*')
                     if os.name == 'nt':
-                        category = input("Set category [{}]:".format(operator.get_categories()))
+                        category = None
+                        while category not in choices:
+                            if category is not None:
+                                print ("Incorrect Category! Use NEW* to add a new category!")
+                            category = input("Set category [{}]:".format(sorted(choices)))
+                            if category == 'NEW*':
+                                category = input("Set new category: ")
+                                break
                     else:
                         cli = Bullet(prompt = "Choose category: ", choices = sorted(choices))   # Create a Bullet or Check object
                         category = cli.launch()  # Launch a prompt
@@ -240,7 +247,7 @@ if __name__ == '__main__':
                 totals[key] = analysis[key]
     rows = []
     rows.append(['category', 'ammount', 'percentage', 'total', 'average'])
-    print("{:15} {:15}, {:6} of {:10} {} ".format('category', 'ammount', 'percentage', 'total', 'average' ))
+    print("{:15} {:15} {:6} of {:10} {} ".format('category', 'ammount', 'percentage', 'total', 'average' ))
     print("------------------------"*3)
     add_line = False
     for key, value in sorted(totals.items(), key=lambda item: item[1]):
@@ -254,10 +261,10 @@ if __name__ == '__main__':
                 add_line = True
         if key not in ['_total_']:
             rows.append([key, "{:.2f}".format(value), "{:.2f}%".format(percentage), "{:.2f}".format(total), "{:.2f}".format(value/files_count)])
-            print("{:15} {:15,.2f}, {:6.2f}% of {:10,.2f}. {:,.2f} ".format(key.ljust(10), value, percentage, total, value/files_count ))
+            print("{:15} {:15,.2f} {:6.2f}% of {:11,.2f} {:11,.2f} ".format(key, value, percentage, total, value/files_count ))
     print("------------------------"*3)
     rows.append(['_total_', "{:.2f}".format(totals['_total_']), '-', '-', "{:.2f}".format(value/files_count)])
-    print("{:15} {:15,.2f}, {:6} of {:10} {:,.2f} ".format('_total_'.ljust(10), totals['_total_'], '-', '-', totals['_total_']/files_count ))
+    print("{:15} {:15,.2f} {:6}  of {:11} {:11,.2f} ".format('_total_', totals['_total_'], '-', '-', totals['_total_']/files_count ))
     with open('summary.csv', 'w') as csvfile:
         writer = csv.writer(csvfile)
         for item in rows:
