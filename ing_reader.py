@@ -144,9 +144,9 @@ class Analytics:
     def __init__(self, transactions):
         self.transactions = transactions
     
-    def get_Sum(self, type='_all_'):
+    def get_Sum(self, type='_total_'):
         # type = _all_, in, out
-        valid_params = ['_all_', '_in_', '_out_']
+        valid_params = ['_total_', '_in_', '_out_']
         if type not in valid_params:
             raise ("Wrong parameter for type. {} in {}".format(type, valid_params))
         total = 0
@@ -158,9 +158,9 @@ class Analytics:
             else:
                 total = total + t.ammount
         return total
-    def get_SumByCategory(self, category='_all_'):
+    def get_SumByCategory(self, category='_total_'):
         total = dict()
-        total['_all_'] = 0
+        total['_total_'] = 0
         total['_in_'] = 0
         total['_out_'] = 0
         for t in self.transactions:
@@ -172,7 +172,7 @@ class Analytics:
                 total['_in_'] = total['_in_'] + t.ammount
             else:
                 total['_out_'] = total['_out_'] + t.ammount
-            total['_all_'] = total['_all_'] + t.ammount
+            total['_total_'] = total['_total_'] + t.ammount
         return total
         
     def get_All(self):
@@ -188,7 +188,7 @@ class Analytics:
             else:
                 total = total_in
             percentage = 100*value/total
-            if key != '_all_':
+            if key != '_total_':
                 print("{} {:10.2f} {:5.2f}% of {:10.2f} ".format(key.ljust(10), value, percentage, total))
 
 class ING_FileCompactor:
@@ -236,15 +236,23 @@ if __name__ == '__main__':
                 totals[key] = totals[key] + analysis[key]
             else:
                 totals[key] = analysis[key]
-    print("{:15} {:15}, {:5} of {:10} {} ".format('category', 'ammount', 'percentage', 'total', 'average' ))
+    print("{:15} {:15}, {:6} of {:10} {} ".format('category', 'ammount', 'percentage', 'total', 'average' ))
+    print("------------------------"*3)
+    add_line = False
     for key, value in sorted(totals.items(), key=lambda item: item[1]):
-            if value < 0:
-                total = totals['_out_']
-            else:
-                total = totals['_in_']
-            percentage = 100*value/total
-            if key not in ['_all_']:
-                print("{:15} {:15,.2f}, {:5.2f}% of {:10,.2f}. {:,.2f} ".format(key.ljust(10), value, percentage, total, value/files_count ))
+        if value < 0:
+            total = totals['_out_']
+        else:
+            total = totals['_in_']
+        percentage = 100*value/total
+        if value > 0 and add_line is False:
+                print("------------------------"*3)
+                add_line = True
+        if key not in ['_total_']:
+            print("{:15} {:15,.2f}, {:6.2f}% of {:10,.2f}. {:,.2f} ".format(key.ljust(10), value, percentage, total, value/files_count ))
+    print("------------------------"*3)
+    print("{:15} {:15,.2f}, {:6} of {:10} {:,.2f} ".format('_total_'.ljust(10), totals['_total_'], '-', '-', totals['_total_']/files_count ))
+        
     
 
             
