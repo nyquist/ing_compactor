@@ -7,7 +7,7 @@ import locale
 from datetime import date
 import csv
 
-locale.setlocale(locale.LC_ALL, 'ro')
+#locale.setlocale(locale.LC_ALL, 'ro')
 
 
 def parse_chunk(chunk):
