@@ -205,20 +205,20 @@ class ING_FileCompactor:
                     print(transaction)
                     #print(transaction.get_meta())
                     choices = list(operator.get_categories())
-                    choices.append('NEW')
+                    choices.append('NEW*')
                     if os.name == 'nt':
                         category = input("Set category [{}]:".format(operator.get_categories()))
                     else:
-                        cli = Bullet(prompt = "Choose from the items below: ", choices = sorted(choices))   # Create a Bullet or Check object
+                        cli = Bullet(prompt = "Choose category: ", choices = sorted(choices))   # Create a Bullet or Check object
                         category = cli.launch()  # Launch a prompt
-                        if category == 'NEW':
+                        if category == 'NEW*':
                             new_cli = Input(prompt = "Add new category: " )  # Create a Bullet or Check object
                             category = new_cli.launch()  # Launch a prompt
                     transaction.set_category(category)
                     operator.add_participant(transaction.party, category)
             operator.save()
         self.ing_reader.save()
-        
+     
     def get_analysis(self):
         analysis = Analytics(self.ing_reader.getTransactions())
         return analysis.get_SumByCategory()
