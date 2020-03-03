@@ -1,3 +1,7 @@
 *.xls
 *.csv
 *.pdf
+*.bkp
+*.txt
+!requirements.txt
+.vscode/*

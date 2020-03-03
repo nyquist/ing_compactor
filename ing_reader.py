@@ -1,18 +1,21 @@
 import csv
 import json
-import collections
 from os import listdir
 from bullet import Bullet, Input 
 import os
+from tabulate import tabulate
+from shutil import copyfile
+from tqdm import tqdm
 
 
 
 class ING_Transaction:
-    def __init__(self, timestamp, type, ammount, id):
+    def __init__(self, timestamp, type, incoming ,outgoing, id):
         self.id = id
         self.timestamp = self._toDate(timestamp)
         self.type = type
-        self.ammount = ammount
+        self.incoming = incoming
+        self.outgoing = outgoing
         self.meta = dict()
         self.category = 'unknown'
         self.party = 'unknown'
@@ -34,17 +37,17 @@ class ING_Transaction:
         self.meta.update({name: value})
         if name in ['Terminal', 'Ordonator', 'Beneficiar']:
             self.party = self.meta[name]
-        if name in ['In contul']:
+        if name in ['In contul', 'Din contul']:
             self.party = self.party + " " + self.meta[name]
 
     def set_category(self, category):
         self.category = category
         
     def __str__(self):
-        return ("{}: {}, {}, {}, {}, {}".format(self.id, self.timestamp, self.type, self.ammount, self.party, self.category))
+        return ("{}: {}, {}, {}, {}, {}, {}".format(self.id, self.timestamp, self.type, self.incoming, self.outgoing, self.party, self.category))
     
     def asList(self):
-        return (self.id, self.timestamp, self.type, self.ammount, self.party, self.category)
+        return (self.id, self.timestamp, self.type, self.incoming, self.outgoing, self.party, self.category)
     def get_meta(self, name='ALL'):
         if name == 'ALL':
             return self.meta
@@ -83,26 +86,23 @@ class ING_Reader:
                     try:
                         if row[5] != '':
                         ## Cumparare
-                            ammount = -float(row[5].replace('.','').replace(',','.'))
+                            incoming = 0
+                            outgoing = float(row[5].replace('.','').replace(',','.'))
                         elif row[7] !='':
-                            ammount = float(row[7].replace('.','').replace(',','.'))
+                            incoming = float(row[7].replace('.','').replace(',','.'))
+                            outgoing = 0
                         else:
-                            raise ('No ammount!')
-                        new_transaction = ING_Transaction(row[0], row[2], ammount, len(self.transactions)+1)
+                            raise ValueError('No ammount!')
+                        new_transaction = ING_Transaction(row[0], row[2], incoming, outgoing, len(self.transactions)+1)
                         self.transactions.append(new_transaction)
                         
                         
                     except Exception as e:
-                        #print (e)
                         pass
                 else:
-                    try:
+                    if ":" in row[2]:
                         (name,value) = row[2].split(':')
-                        
                         new_transaction.add_meta(name, value)
-                    except Exception as e:
-                        #print (e)
-                        pass
                     
             
         
@@ -120,6 +120,7 @@ class ParticipantsOperator:
     def __init__(self, filename):
         self.participants_dict = {}
         self.filename = filename
+        copyfile(filename, filename+".bkp")
         with open(filename) as csvfile:
             lines = csv.reader(csvfile, delimiter=',', quotechar='"')
             for row in lines:
@@ -135,7 +136,7 @@ class ParticipantsOperator:
         self.participants_dict.update({participant:category})
         
     def save(self):
-        with open(self.filename, 'w') as csvfile:
+        with open(self.filename, 'w+') as csvfile:
             writer = csv.writer(csvfile)
             for (k,v) in sorted(self.participants_dict.items()):
                 writer.writerow([k,v])
@@ -144,53 +145,21 @@ class ParticipantsOperator:
 class Analytics:
     def __init__(self, transactions):
         self.transactions = transactions
-    
-    def get_Sum(self, type='_total_'):
-        # type = _all_, in, out
-        valid_params = ['_total_', '_in_', '_out_']
-        if type not in valid_params:
-            raise ("Wrong parameter for type. {} in {}".format(type, valid_params))
-        total = 0
-        for t in self.transactions:
-            if type == '_out_':
-                total = total + min (0, t.ammount)
-            elif type == '_in_':
-                total = total + max (0, t.ammount)
-            else:
-                total = total + t.ammount
-        return total
-    def get_SumByCategory(self, category='_total_'):
-        total = dict()
-        total['_total_'] = 0
-        total['_in_'] = 0
-        total['_out_'] = 0
-        for t in self.transactions:
-            if t.category in total:
-                total[t.category] = total[t.category] + t.ammount
-            else:
-                total[t.category] = t.ammount
-            if t.ammount >= 0:
-                total['_in_'] = total['_in_'] + t.ammount
-            else:
-                total['_out_'] = total['_out_'] + t.ammount
-            total['_total_'] = total['_total_'] + t.ammount
-        return total
         
-    def get_All(self):
-        total_in = self.get_Sum(type = '_in_')
-        total_out = self.get_Sum(type = '_out_')
-        print ("Total: IN:{:.2f}, OUT:{:.2f}, DIFF:{:.2f} ".format(total_in, total_out, self.get_Sum()))
-        ####
-        categories = self.get_SumByCategory()
-        
-        for key, value in sorted(categories.items(), key=lambda item: item[1]):
-            if value < 0:
-                total = total_out
+    def get_SumByCategory(self, category='_any_'):
+        totals = {
+            '_any_': {'in':0, 'out':0}
+        }
+        for t in self.transactions:
+            if t.category in totals:
+                totals[t.category]['in'] = totals[t.category]['in'] + t.incoming
+                totals[t.category]['out'] = totals[t.category]['out'] + t.outgoing
             else:
-                total = total_in
-            percentage = 100*value/total
-            if key != '_total_':
-                print("{} {:10.2f} {:5.2f}% of {:10.2f} ".format(key, value, percentage, total))
+                totals[t.category] = {'in':t.incoming, 'out':t.outgoing}
+            totals['_any_']['in'] = totals['_any_']['in'] + t.incoming
+            totals['_any_']['out'] = totals['_any_']['out'] + t.outgoing
+        return totals
+        
 
 class ING_FileCompactor:
     def __init__(self, fileName):
@@ -235,42 +204,68 @@ if __name__ == '__main__':
     prefix = 'ING Bank - Extras de cont'
     filenames = listdir('.')
     totals = dict()
-    files_count = 0
+    files_list = []
     print ('Parsing files')
-    for f in [ filename for filename in filenames if filename.endswith( suffix ) and filename.startswith(prefix) ]:
-        print("{}".format(f))
-        files_count = files_count + 1
-        analysis = ING_FileCompactor(f).get_analysis()
-        for key in analysis:
-            if key in totals:
-                totals[key] = totals[key] + analysis[key]
+    for f in tqdm([ filename for filename in filenames if filename.endswith( suffix ) and filename.startswith(prefix) ]):
+        files_list.append(f)
+        file_analysis = ING_FileCompactor(f).get_analysis()
+        for category in file_analysis:
+            if category in totals:
+                totals[category]['in'] = totals[category]['in'] + file_analysis[category]['in']
+                totals[category]['out'] = totals[category]['out'] + file_analysis[category]['out']
             else:
-                totals[key] = analysis[key]
+                totals[category] = {
+                    'in':  file_analysis[category]['in'],
+                    'out': file_analysis[category]['out']
+                }
     rows = []
-    rows.append(['category', 'ammount', 'percentage', 'total', 'average'])
-    print()
-    print("{:15} {:15} {:6} of {:10} {} ".format('category', 'ammount', 'percentage', 'total', 'average' ))
-    print("------------------------"*3)
+    headers = [
+        'category', 
+        'incoming',
+        'outgoing', 
+        'diff', 
+        'avg_in[{}]'.format(len(files_list)), 
+        'avg_out[{}]'.format(len(files_list)), 
+        'avg_diff[{}]'.format(len(files_list)), 
+        'percent_in', 
+        'percent_out',
+        ]
+    floatfmt = ['0', '.2f', '.2f', '.2f', '.2f', '.2f', '.2f', '.2%' , '.2%', ]
     add_line = False
-    for key, value in sorted(totals.items(), key=lambda item: item[1]):
-        if value < 0:
-            total = totals['_out_']
-        else:
-            total = totals['_in_']
-        percentage = 100*value/total
-        if value > 0 and add_line is False:
-                print("------------------------"*3)
-                add_line = True
-        if key not in ['_total_']:
-            rows.append([key, "{:.2f}".format(value), "{:.2f}%".format(percentage), "{:.2f}".format(total), "{:.2f}".format(value/files_count)])
-            print("{:15} {:15,.2f} {:6.2f}% of {:11,.2f} {:11,.2f} ".format(key, value, percentage, total, value/files_count ))
-    print("------------------------"*3)
-    rows.append(['_total_', "{:.2f}".format(totals['_total_']), '-', '-', "{:.2f}".format(value/files_count)])
-    print("{:15} {:15,.2f} {:6}  of {:11} {:11,.2f} ".format('_total_', totals['_total_'], '-', '-', totals['_total_']/files_count ))
-    with open('summary.csv', 'w') as csvfile:
-        writer = csv.writer(csvfile)
-        for item in rows:
-            writer.writerow(item)
+    for key, value in sorted(totals.items(), key = lambda e: e[1]['out']-e[1]['in']  , reverse = True):
+        if key not in ['_any_']:
+            rows.append([
+                key,
+                totals[key]['in'],
+                totals[key]['out'], 
+                totals[key]['in'] - totals[key]['out'],
+                totals[key]['in']/len(files_list), 
+                totals[key]['out']/len(files_list), 
+                totals[key]['in']/len(files_list) - totals[key]['out']/len(files_list), 
+                totals[key]['in']/totals['_any_']['in'], 
+                totals[key]['out']/totals['_any_']['out'],
+                ] )
+    rows.append(['-------'])
+    rows.append([
+        'Total', 
+        totals['_any_']['in'], 
+        totals['_any_']['out'],
+        totals['_any_']['in'] - totals['_any_']['out'],  
+        totals['_any_']['in']/len(files_list), 
+        totals['_any_']['out']/len(files_list), 
+        totals['_any_']['in']/len(files_list) - totals['_any_']['out']/len(files_list), 
+        totals['_any_']['in']/totals['_any_']['in'], 
+        totals['_any_']['out']/totals['_any_']['out']
+        ])
     
+    print (tabulate(rows, headers = headers, floatfmt=floatfmt))
+    output_file_name = 'summary.txt'
+    copyfile(output_file_name, output_file_name+".bkp")
+    with open(output_file_name, 'w+') as output_file:
+        output_file.write(tabulate(rows, headers = headers, floatfmt=floatfmt))
+        
+        output_file.write('\n\n\nFiles included:\n')
+        for f in files_list:
+            output_file.write(f + '\n')
 
             

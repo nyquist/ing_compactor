@@ -4,7 +4,14 @@ Converteste extrasele de cont de la ING Bank in fisiere csv compacte, cu cate o 
 Face si cateva statistici legate de felul in care s-au cheltuit banii.
 
 ## Cum functioneaza
-Scriptul va procesa toate fisierle csv din directorul curent care pastreaza numele in formatul original: *ING Bank - Extras de cont LUNA_AN_IBAN_MONEDA.CSV*
-Scriptul va genera cate un fisier nou cu prefixul "compact_" care va contine categoriile 
-Toate debitarile apar cu valoare negativa iar toate creditarile apar cu valoare pozitiva
+Scriptul va procesa toate fisierle csv din directorul curent care pastreaza numele in formatul original: *ING Bank - Extras de cont[].csv*
+Scriptul va genera cate un fisier nou cu prefixul "compact_" care va contine cate o linie pentru fiecare tranzactie.
+Scriptul va intreba carei categorii sa asocieze fiecare creditor/debitor identificat intr-o tranzactie.
+Scriptul va genera si cateva statistici pe care le va afisa pe ecran si in fisierul summary.txt
+
+## Pentru a instala librariile necesare:
+`pip3 install -r requirements.txt`
+
+## Pentru a rula:
+`python3 ing_reader.py`
 
