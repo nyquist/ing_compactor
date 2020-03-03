@@ -1,33 +1,17 @@
 # ing_compactor
 
 Converteste extrasele de cont de la ING Bank in fisiere csv compacte, cu cate o tranzactie pe linie pentru a usura analiza lor.
+Face si cateva statistici legate de felul in care s-au cheltuit banii.
 
 ## Cum functioneaza
-Scriptul va procesa toate fisierle csv din directorul curent care pastreaza numele in formatul original: *ING Bank - Extras de cont LUNA_AN_IBAN_MONEDA.CSV*
+Scriptul va procesa toate fisierle csv din directorul curent care pastreaza numele in formatul original: *ING Bank - Extras de cont[].csv*
+Scriptul va genera cate un fisier nou cu prefixul "compact_" care va contine cate o linie pentru fiecare tranzactie.
+Scriptul va intreba carei categorii sa asocieze fiecare creditor/debitor identificat intr-o tranzactie.
+Scriptul va genera si cateva statistici pe care le va afisa pe ecran si in fisierul summary.txt
 
-Scriptul va genera cate un fisier nou cu numele ING Bank - *Extras de cont LUNA_AN_IBAN_MONEDA_compact.CSV* precum si un fisier care contine toate tranzactiile din toate fisiere cu numele *ING Bank - Extras de cont - All in one.csv*
+## Pentru a instala librariile necesare:
+`pip3 install -r requirements.txt`
 
-Toate debitarile apar cu valoare negativa iar toate creditarile apar cu valoare pozitiva
+## Pentru a rula:
+`python3 ing_reader.py`
 
-Fisierele generate vor contine cate o tranzactie pe linie, in formatul:
-
-iban|data|tip|suma|debit/credit|cine|detalii
-
-## Setari
-```python
-### START CONFIG ###
-# Formatul zilelor:
-DATE_FORMAT = "%d-%m-%Y"
-# Cum se concateneaza detaliile:
-JOIN_CHAR = "|"
-# False: Fisierle de iesire doar adauga un sufix la fisierul de intrare
-# True: Fisierle de iesire sunt redenumite cu luna in format numeric
-SORTABLE_FILES = False
-# Sufixul fisierelor de iesire:
-SUFIX = "_compact"
-# Genereaza si fisierul cu toate tranzactiile?
-ALL_IN_ONE = True
-# Printeaza mai multe detalii
-VERBOSE = False
-### END CONFIG ###
-```
