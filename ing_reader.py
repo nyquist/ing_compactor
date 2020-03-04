@@ -23,8 +23,10 @@ class ING_Transaction:
             self.party = 'ExtraROL'
             self.category = 'credit_line'
         elif self.type == 'Retragere numerar':
+            self.party = "ATM"
             self.category = 'cash'
         elif self.type == "Schimb valutar Home'Bank":
+            self.party = "Home'Bank"
             self.category = 'schimb_valutar'
         elif self.type == "Realimentare Extra'ROL Home'Bank":
             self.party = 'ExtraROL'
