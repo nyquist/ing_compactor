@@ -24,15 +24,17 @@ class ING_Transaction:
             self.category = 'credit_line'
         elif self.type == 'Retragere numerar':
             self.category = 'cash'
+        elif self.type == "Schimb valutar Home'Bank":
+            self.category = 'schimb_valutar'
         elif self.type == "Realimentare Extra'ROL Home'Bank":
             self.party = 'ExtraROL'
-            self.category = 'credit'
+            self.category = 'credit_line'
         elif self.type == "Alimentare Card Credit Home'Bank":
             self.party = 'CreditCard'
-            self.category = 'credit'
+            self.category = 'credit_cards'
         elif self.type == 'Rata Credit':
             self.party = 'ExtraROL'
-            self.category = 'credit'
+            self.category = 'credit_line'
     def add_meta(self, name, value):
         self.meta.update({name: value})
         if name in ['Terminal', 'Ordonator', 'Beneficiar']:
@@ -138,7 +140,7 @@ class ParticipantsOperator:
     def save(self):
         with open(self.filename, 'w+') as csvfile:
             writer = csv.writer(csvfile)
-            for (k,v) in sorted(self.participants_dict.items()):
+            for (k,v) in sorted(self.participants_dict.items(), key = lambda x: x[1]):
                 writer.writerow([k,v])
             
 
